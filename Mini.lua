@@ -43,6 +43,12 @@ function Mini:HideReputationXpOverlay()
     StatusTrackingBarManager.SingleBarLargeUpper:Hide()
     StatusTrackingBarManager.SingleBarSmall:Hide()
     StatusTrackingBarManager.SingleBarSmallUpper:Hide()
+    for i = 1, 4 do
+      local bar = StatusTrackingBarManager.bars[i]
+      if bar and bar.StatusBar and bar.StatusBar.Background then
+        bar.StatusBar.Background:Hide()
+      end
+    end
   end)
 end
 
@@ -99,12 +105,17 @@ function Mini:MoveUnitFrames()
     TargetFrame:ClearAllPoints()
     TargetFrame:SetPoint("LEFT", "SpellActivationOverlayFrame", "RIGHT", 100, 0)
     TargetFrameTextureFrameTexture:Hide()
-    -- TargetFrameNameBackground:Hide() -- TODO: change to just be transparent black
     TargetFrameNameBackground:SetTexture(0.0, 0.0, 0.0, 0.5)
     FocusFrame:ClearAllPoints()
     FocusFrame:SetPoint("BOTTOMLEFT", "SpellActivationOverlayFrame", "TOPRIGHT", 100, 0)
     FocusFrameTextureFrameTexture:Hide()
+    FocusFrameNameBackground:SetTexture(0.0, 0.0, 0.0, 0.5)
   end)
+end
+
+function Mini:CompactRaidFrames()
+  CompactRaidFrameContainer:ClearAllPoints()
+  CompactRaidFrameContainer:SetPoint("TOP", "SpellActivationOverlayFrame", "BOTTOM", 0, -180)
 end
 
 function Mini:SellJunk()
@@ -158,6 +169,7 @@ function Mini:init()
   Mini:HideMinimapClutter()
   Mini:HideStanceBar()
   Mini:MoveUnitFrames()
+  Mini:CompactRaidFrames()
   self.eventframe:RegisterEvent("MERCHANT_SHOW")
   self.eventframe:SetScript("OnEvent", function(x, event, ...)
     Mini:SellJunk()
