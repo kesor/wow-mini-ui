@@ -101,6 +101,7 @@ function Mini:MoveUnitFrames()
     PlayerFrameAlternateManaBarLeftBorder:Hide()
     PlayerFrameAlternateManaBarBorder:Hide()
     PlayerFrameAlternateManaBarRightBorder:Hide()
+    PetFrameTexture:Hide()
     ComboPointPlayerFrame.Background:Hide()
     TargetFrame:ClearAllPoints()
     TargetFrame:SetPoint("LEFT", "SpellActivationOverlayFrame", "RIGHT", 100, 0)
@@ -160,6 +161,37 @@ function Mini:Repair()
   end
 end
 
+function Mini:ExtraRaidBuffs()
+  local maxBuffs = 9
+  local maxDebuffs = 9
+  hooksecurefunc("CompactUnitFrame_UpdateAuras", function(frame)
+    if frame and frame.buffFrames then
+      bf = frame.buffFrames
+      for i = 4, maxBuffs do -- position accordingly
+        if not bf[i] then
+          bf[i] = CreateFrame("Button", frame:GetName().."Buff"..i, frame, "CompactBuffTemplate")
+        end
+        CompactUnitFrame_SetMaxBuffs(frame, maxBuffs)
+        bf[i]:SetSize(bf[1]:GetSize())
+        bf[i]:ClearAllPoints()
+        bf[i]:SetPoint("BOTTOMRIGHT", bf[i-3], "TOPRIGHT", 0, 0)
+      end
+    end
+    if frame and frame.debuffFrames then
+      df = frame.debuffFrames
+      for i = 4, maxDebuffs do -- position accordingly
+        if not df[i] then
+          df[i] = CreateFrame("Button", frame:GetName().."Debuff"..i, frame, "CompactDebuffTemplate")
+        end
+        CompactUnitFrame_SetMaxDebuffs(frame, maxDebuffs)
+        df[i]:SetSize(df[1]:GetSize())
+        df[i]:ClearAllPoints()
+        df[i]:SetPoint("BOTTOMLEFT", df[i-3], "TOPLEFT", 0, 0)
+      end
+    end
+  end)
+end
+
 function Mini:init()
   self.eventframe = CreateFrame("Frame", eframe, UIParent)
   self.eventframe:UnregisterAllEvents()
@@ -170,6 +202,7 @@ function Mini:init()
   Mini:HideStanceBar()
   Mini:MoveUnitFrames()
   Mini:CompactRaidFrames()
+  Mini:ExtraRaidBuffs()
   self.eventframe:RegisterEvent("MERCHANT_SHOW")
   self.eventframe:SetScript("OnEvent", function(x, event, ...)
     Mini:SellJunk()
