@@ -111,6 +111,8 @@ function Mini:MoveUnitFrames()
     FocusFrame:SetPoint("BOTTOMLEFT", "SpellActivationOverlayFrame", "TOPRIGHT", 100, 0)
     FocusFrameTextureFrameTexture:Hide()
     FocusFrameNameBackground:SetTexture(0.0, 0.0, 0.0, 0.5)
+    FocusFrame:SetFrameStrata(BACKGROUND)
+    FocusFrameTextureFramePVPIcon:SetAlpha(0)
   end)
 end
 
@@ -192,6 +194,49 @@ function Mini:ExtraRaidBuffs()
   end)
 end
 
+function Mini:CompactUnitFrameBuffCountdown()
+  hooksecurefunc("CooldownFrame_Set", function(frame, start, duration, enable, forceShowDrawEdge, modRate)
+    if enable and enable ~= 0 and start > 0 and duration > 0 then
+      if frame:GetName():match("^Compact") then
+        -- newFrame = CreateFrame("frameType"[, "frameName"[, parentFrame[, "inheritsFrame"]]]);
+        local textFrameName = frame:GetName().."Text"
+        local textFrame = nil
+        if not _G[textFrameName] then
+          textFrame = CreateFrame("Frame", textFrameName, frame)
+          textFrame:SetSize(40, 40)
+          textFrame:SetPoint("CENTER", frame, "CENTER", 0, 0)
+          textFrame.text = textFrame:CreateFontString("$parentText", "OVERLAY")
+          textFrame.text:SetFont("Fonts\\UbuntuMono-Bold.ttf", 12, "OUTLINE")
+          textFrame.text:SetPoint("CENTER")
+          textFrame.text:SetJustifyH("RIGHT")
+          textFrame.text:SetJustifyV("CENTER")
+          textFrame:Show()
+        else
+          textFrame = _G[textFrameName]
+        end
+        frame:SetScript("OnUpdate", function(frame, elapsed)
+          local timeLeft = (start + duration) - GetTime()
+          if timeLeft > 0 then
+            if timeLeft < 3 then
+              textFrame.text:SetText(string.format("%.1f",timeLeft))
+              textFrame.text:SetTextColor(1,0,0,1)
+            elseif timeLeft < 6 then
+              textFrame.text:SetText(string.format("%.1f",timeLeft))
+              textFrame.text:SetTextColor(1,1,0,1)
+            elseif timeLeft < 10 then
+              textFrame.text:SetText(string.format("%.0f",timeLeft))
+              textFrame.text:SetTextColor(1,1,1,1)
+            elseif timeLeft < 100 then
+              textFrame.text:SetText(string.format("%.0f",timeLeft))
+              textFrame.text:SetTextColor(0.5,0.5,0.5,1)
+            end
+          end
+        end)
+      end
+    end
+  end)
+end
+
 function Mini:init()
   self.eventframe = CreateFrame("Frame", eframe, UIParent)
   self.eventframe:UnregisterAllEvents()
@@ -203,6 +248,7 @@ function Mini:init()
   Mini:MoveUnitFrames()
   Mini:CompactRaidFrames()
   Mini:ExtraRaidBuffs()
+  Mini:CompactUnitFrameBuffCountdown()
   self.eventframe:RegisterEvent("MERCHANT_SHOW")
   self.eventframe:SetScript("OnEvent", function(x, event, ...)
     Mini:SellJunk()
