@@ -194,35 +194,37 @@ function Mini:ExtraRaidBuffs()
 end
 
 function Mini:CompactUnitFrameBuffCountdown()
-  hooksecurefunc("CompactUnitFrame_UtilSetBuff", function(buffFrame, unit, index, filter)
-    if not buffFrame or buffFrame:IsForbidden() or not buffFrame:GetName():match("^Compact") then
+  hooksecurefunc("CompactUnitFrame_UtilSetBuff", function(frame, unit, index, filter)
+    if not frame or frame:IsForbidden() or not frame:GetName():match("^Compact") then
       return
     end
-    local cooldownFrame = _G[buffFrame:GetName().."Cooldown"]
+    local cooldownFrame = _G[frame:GetName().."Cooldown"]
     if not cooldownFrame.text then
       cooldownFrame.text = cooldownFrame:CreateFontString("$parentText", "OVERLAY")
-      cooldownFrame.text:SetFont("Fonts\\UbuntuMono-Regular.ttf", 12, "OUTLINE")
-      cooldownFrame.text:SetPoint("CENTER")
-      cooldownFrame.text:SetJustifyH("RIGHT")
+      cooldownFrame.text:SetFont("Fonts\\UbuntuMono-Regular.ttf", 10, "OUTLINE")
+      cooldownFrame.text:SetPoint("CENTER", 1, 0)
+      cooldownFrame.text:SetJustifyH("MIDDLE")
       cooldownFrame.text:SetJustifyV("CENTER")
     end
-    local name, icon, count, debuffType, duration, expirationTime, unitCaster, canStealOrPurge, _, spellId, canApplyAura = UnitBuff(unit, index, filter)
-    cooldownFrame:SetScript("OnUpdate", function(frame, elapsed)
-      timeLeft = expirationTime - GetTime()
+    local _, _, _, _, _, expirationTime, _, _, _, _, _ = UnitBuff(unit, index, filter)
+    cooldownFrame:SetScript("OnUpdate", function(self, elapsed)
+      local timeLeft = expirationTime - GetTime()
       if timeLeft <= 0 then
+        self.text:SetText("")
         return
       elseif timeLeft < 3 then
-        cooldownFrame.text:SetText(string.format("%.1f",timeLeft))
-        cooldownFrame.text:SetTextColor(1,0,0,1)
+        self.text:SetText(string.format("%.1f",timeLeft))
+        self.text:SetTextColor(1,0.25,0.25,1)
       elseif timeLeft < 6 then
-        cooldownFrame.text:SetText(string.format("%.1f",timeLeft))
-        cooldownFrame.text:SetTextColor(1,1,0,1)
+        self.text:SetText(string.format("%.1f",timeLeft))
+        self.text:SetTextColor(1,1,0,1)
       elseif timeLeft < 10 then
-        cooldownFrame.text:SetText(string.format("%.0f",timeLeft))
-        cooldownFrame.text:SetTextColor(1,1,1,1)
+        self.text:SetText(string.format("%.0f",timeLeft))
+        self.text:SetTextColor(1,1,1,1)
+        self.text:SetTextColor(0.5,0.5,0.5,1)
       elseif timeLeft < 100 then
-        cooldownFrame.text:SetText(string.format("%.0f",timeLeft))
-        cooldownFrame.text:SetTextColor(0.5,0.5,0.5,1)
+        self.text:SetText("")
+        -- self.text:SetText(string.format("%.0f",timeLeft))
       end
     end)
   end)
@@ -267,6 +269,17 @@ function Mini:CompactUnitFrameBuffSort()
   end)
 end
 
+function Mini:CompactUnitFrameHideFullHealth()
+  hooksecurefunc("CompactUnitFrame_UpdateStatusText", function(frame)
+    if not frame or frame:IsForbidden() or not frame.buffFrames or not frame:GetName():match("^Compact") then
+      return -- do not mess with protected name plates, especially during combat
+    end
+    if frame.optionTable.healthText == "perc" and frame.statusText:GetText() == "100%" then
+      frame.statusText:Hide()
+    end
+  end)
+end
+
 function Mini:init()
   self.eventframe = CreateFrame("Frame", eframe, UIParent)
   self.eventframe:UnregisterAllEvents()
@@ -280,6 +293,7 @@ function Mini:init()
   Mini:ExtraRaidBuffs()
   Mini:CompactUnitFrameBuffCountdown()
   Mini:CompactUnitFrameBuffSort()
+  Mini:CompactUnitFrameHideFullHealth()
   self.eventframe:RegisterEvent("MERCHANT_SHOW")
   self.eventframe:SetScript("OnEvent", function(x, event, ...)
     Mini:SellJunk()
