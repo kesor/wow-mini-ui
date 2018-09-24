@@ -167,73 +167,101 @@ function Mini:ExtraRaidBuffs()
   local maxBuffs = 9
   local maxDebuffs = 9
   hooksecurefunc("CompactUnitFrame_UpdateAuras", function(frame)
-    if frame and frame.buffFrames then
-      bf = frame.buffFrames
-      for i = 4, maxBuffs do -- position accordingly
-        if not bf[i] then
-          bf[i] = CreateFrame("Button", frame:GetName().."Buff"..i, frame, "CompactBuffTemplate")
-        end
-        CompactUnitFrame_SetMaxBuffs(frame, maxBuffs)
-        bf[i]:SetSize(bf[1]:GetSize())
-        bf[i]:ClearAllPoints()
-        bf[i]:SetPoint("BOTTOMRIGHT", bf[i-3], "TOPRIGHT", 0, 0)
-      end
+    if not frame or frame:IsForbidden() or not frame:GetName():match("^Compact") then
+      return
     end
-    if frame and frame.debuffFrames then
-      df = frame.debuffFrames
-      for i = 4, maxDebuffs do -- position accordingly
-        if not df[i] then
-          df[i] = CreateFrame("Button", frame:GetName().."Debuff"..i, frame, "CompactDebuffTemplate")
-        end
-        CompactUnitFrame_SetMaxDebuffs(frame, maxDebuffs)
-        df[i]:SetSize(df[1]:GetSize())
-        df[i]:ClearAllPoints()
-        df[i]:SetPoint("BOTTOMLEFT", df[i-3], "TOPLEFT", 0, 0)
+    bf = frame.buffFrames
+    for i = 4, maxBuffs do -- position accordingly
+      if not bf[i] then
+        bf[i] = CreateFrame("Button", frame:GetName().."Buff"..i, frame, "CompactBuffTemplate")
       end
+      CompactUnitFrame_SetMaxBuffs(frame, maxBuffs)
+      bf[i]:SetSize(bf[1]:GetSize())
+      bf[i]:ClearAllPoints()
+      bf[i]:SetPoint("BOTTOMRIGHT", bf[i-3], "TOPRIGHT", 0, 0)
+    end
+    df = frame.debuffFrames
+    for i = 4, maxDebuffs do -- position accordingly
+      if not df[i] then
+        df[i] = CreateFrame("Button", frame:GetName().."Debuff"..i, frame, "CompactDebuffTemplate")
+      end
+      CompactUnitFrame_SetMaxDebuffs(frame, maxDebuffs)
+      df[i]:SetSize(df[1]:GetSize())
+      df[i]:ClearAllPoints()
+      df[i]:SetPoint("BOTTOMLEFT", df[i-3], "TOPLEFT", 0, 0)
     end
   end)
 end
 
 function Mini:CompactUnitFrameBuffCountdown()
-  hooksecurefunc("CooldownFrame_Set", function(frame, start, duration, enable, forceShowDrawEdge, modRate)
-    if enable and enable ~= 0 and start > 0 and duration > 0 then
-      if frame:GetName():match("^Compact") then
-        -- newFrame = CreateFrame("frameType"[, "frameName"[, parentFrame[, "inheritsFrame"]]]);
-        local textFrameName = frame:GetName().."Text"
-        local textFrame = nil
-        if not _G[textFrameName] then
-          textFrame = CreateFrame("Frame", textFrameName, frame)
-          textFrame:SetSize(40, 40)
-          textFrame:SetPoint("CENTER", frame, "CENTER", 0, 0)
-          textFrame.text = textFrame:CreateFontString("$parentText", "OVERLAY")
-          textFrame.text:SetFont("Fonts\\UbuntuMono-Bold.ttf", 12, "OUTLINE")
-          textFrame.text:SetPoint("CENTER")
-          textFrame.text:SetJustifyH("RIGHT")
-          textFrame.text:SetJustifyV("CENTER")
-          textFrame:Show()
-        else
-          textFrame = _G[textFrameName]
-        end
-        frame:SetScript("OnUpdate", function(frame, elapsed)
-          local timeLeft = (start + duration) - GetTime()
-          if timeLeft > 0 then
-            if timeLeft < 3 then
-              textFrame.text:SetText(string.format("%.1f",timeLeft))
-              textFrame.text:SetTextColor(1,0,0,1)
-            elseif timeLeft < 6 then
-              textFrame.text:SetText(string.format("%.1f",timeLeft))
-              textFrame.text:SetTextColor(1,1,0,1)
-            elseif timeLeft < 10 then
-              textFrame.text:SetText(string.format("%.0f",timeLeft))
-              textFrame.text:SetTextColor(1,1,1,1)
-            elseif timeLeft < 100 then
-              textFrame.text:SetText(string.format("%.0f",timeLeft))
-              textFrame.text:SetTextColor(0.5,0.5,0.5,1)
-            end
-          end
-        end)
-      end
+  hooksecurefunc("CompactUnitFrame_UtilSetBuff", function(buffFrame, unit, index, filter)
+    if not buffFrame or buffFrame:IsForbidden() or not buffFrame:GetName():match("^Compact") then
+      return
     end
+    local cooldownFrame = _G[buffFrame:GetName().."Cooldown"]
+    if not cooldownFrame.text then
+      cooldownFrame.text = cooldownFrame:CreateFontString("$parentText", "OVERLAY")
+      cooldownFrame.text:SetFont("Fonts\\UbuntuMono-Regular.ttf", 12, "OUTLINE")
+      cooldownFrame.text:SetPoint("CENTER")
+      cooldownFrame.text:SetJustifyH("RIGHT")
+      cooldownFrame.text:SetJustifyV("CENTER")
+    end
+    local name, icon, count, debuffType, duration, expirationTime, unitCaster, canStealOrPurge, _, spellId, canApplyAura = UnitBuff(unit, index, filter)
+    cooldownFrame:SetScript("OnUpdate", function(frame, elapsed)
+      timeLeft = expirationTime - GetTime()
+      if timeLeft <= 0 then
+        return
+      elseif timeLeft < 3 then
+        cooldownFrame.text:SetText(string.format("%.1f",timeLeft))
+        cooldownFrame.text:SetTextColor(1,0,0,1)
+      elseif timeLeft < 6 then
+        cooldownFrame.text:SetText(string.format("%.1f",timeLeft))
+        cooldownFrame.text:SetTextColor(1,1,0,1)
+      elseif timeLeft < 10 then
+        cooldownFrame.text:SetText(string.format("%.0f",timeLeft))
+        cooldownFrame.text:SetTextColor(1,1,1,1)
+      elseif timeLeft < 100 then
+        cooldownFrame.text:SetText(string.format("%.0f",timeLeft))
+        cooldownFrame.text:SetTextColor(0.5,0.5,0.5,1)
+      end
+    end)
+  end)
+end
+
+table.indexOf = function(t, object)
+  for i = 1, #t do
+    if object == t[i] then
+      return i
+    end
+  end
+  return nil
+end
+
+function Mini:CompactUnitFrameBuffSort()
+  local druidPriority = { "Lifebloom", "Rejuvenation", "Regrowth", "Wild Growth", "Cenarion Ward", "Ironbark", "Innervate" }
+  hooksecurefunc("CompactUnitFrame_UpdateBuffs", function(frame)
+    for i=1, frame.maxBuffs do -- first, hide all buffs
+      frame.buffFrames[i]:Hide()
+    end
+    local index = 1 -- iterate over available player buffs
+    local frameNum = 1 -- unsorted buff index
+    local filter = nil
+    repeat
+      local buffName = UnitBuff(frame.displayedUnit, index, filter) -- get buff name
+      if buffName and CompactUnitFrame_UtilShouldDisplayBuff(frame.displayedUnit, index, filter) then -- only if it needs to be displayed
+        local frameIndex = nil -- eventual buff index
+        local priority = table.indexOf(druidPriority, buffName)
+        if priority then -- from the end
+          frameIndex = frame.maxBuffs + 1 - priority
+        else -- from the start
+          frameIndex = frameNum
+          frameNum = frameNum + 1
+        end
+        local buffFrame = frame.buffFrames[frameIndex]
+        CompactUnitFrame_UtilSetBuff(buffFrame, frame.displayedUnit, index, filter)
+      end
+      index = index + 1
+    until not buffName or index > frame.maxBuffs
   end)
 end
 
@@ -249,6 +277,7 @@ function Mini:init()
   Mini:CompactRaidFrames()
   Mini:ExtraRaidBuffs()
   Mini:CompactUnitFrameBuffCountdown()
+  Mini:CompactUnitFrameBuffSort()
   self.eventframe:RegisterEvent("MERCHANT_SHOW")
   self.eventframe:SetScript("OnEvent", function(x, event, ...)
     Mini:SellJunk()
