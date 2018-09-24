@@ -240,6 +240,9 @@ end
 function Mini:CompactUnitFrameBuffSort()
   local druidPriority = { "Lifebloom", "Rejuvenation", "Regrowth", "Wild Growth", "Cenarion Ward", "Ironbark", "Innervate" }
   hooksecurefunc("CompactUnitFrame_UpdateBuffs", function(frame)
+    if not frame or frame:IsForbidden() or not frame.buffFrames or not frame:GetName():match("^Compact") then
+      return -- do not mess with protected name plates, especially during combat
+    end
     for i=1, frame.maxBuffs do -- first, hide all buffs
       frame.buffFrames[i]:Hide()
     end
