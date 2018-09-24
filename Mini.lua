@@ -260,8 +260,7 @@ function Mini:CompactUnitFrameBuffSort()
           frameIndex = frameNum
           frameNum = frameNum + 1
         end
-        local buffFrame = frame.buffFrames[frameIndex]
-        CompactUnitFrame_UtilSetBuff(buffFrame, frame.displayedUnit, index, filter)
+        CompactUnitFrame_UtilSetBuff(frame.buffFrames[frameIndex], frame.displayedUnit, index, filter)
       end
       index = index + 1
     until not buffName or index > frame.maxBuffs
